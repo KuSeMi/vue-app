@@ -1,11 +1,19 @@
 <script setup>
+import Button from './components/Button.vue';
 </script>
 
 <template>
-  <header>Some LOGO</header>
-  <main>Hello WORLD!</main>
-  <footer>Footer</footer>
+  <main class="main">
+    <Button>
+      Save
+    </Button>
+  </main>
 </template>
 
 <style scoped>
+.main {
+  background: var(--color-bg-main);
+  padding: 60px 50px;
+  border-radius: 25px;
+}
 </style>
