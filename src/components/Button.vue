@@ -20,6 +20,9 @@
     font-size: 600;
     color: var(--primary);
     cursor: pointer;
+    display: flex;
+    gap: 9px;
+    align-items: center;
   }
 
   .button:hover {
