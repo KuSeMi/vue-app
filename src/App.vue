@@ -1,18 +1,24 @@
 <script setup>
+import { nextTick, reactive, ref } from 'vue';
 import CitySelect from './components/CitySelect.vue';
 import Stat from './components/Stat.vue';
-const data = {
+let savedCity = ref("Kyiv");
+let data = reactive({
   label: "Humidity",
-  stat: "90"
-}
+  stat: "90%"
+})
 
-function getCity(city) {
-  console.log(city)
+
+async function getCity(city) {
+  savedCity.value = city;
+  await nextTick();
+  data.stat = "80%";
 }
 </script>
 
 <template>
   <main class="main">
+    {{ savedCity }}
     <Stat v-bind="data" />
     <Stat label="Precipitation" stat="0%" /> 
     <CitySelect @select-city="getCity"/>
