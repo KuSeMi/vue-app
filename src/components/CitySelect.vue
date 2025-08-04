@@ -3,8 +3,11 @@ import { ref } from "vue";
 import IconLocation from "../icons/IconLocation.vue";
 import Button from "./Button.vue";
 import Input from "./input.vue";
-import { onMounted, onUnmounted, onUpdated } from "vue";
+import { onMounted } from "vue";
 
+const props = defineProps({
+  error: String,
+});
 const emit = defineEmits(["selectCity"]);
 
 const city = ref("Kyiv");
@@ -24,16 +27,15 @@ function select() {
 function edit() {
   isEdited.value = true;
 }
-
 </script>
 
 <template>
   <div class="city-select">
-    <div v-show="isEdited" class="city-input">
-      <Input placeholder="Input city" v-model="city" @keyup.enter="select()"/>
+    <div v-if="isEdited" class="city-input">
+      <Input placeholder="Input city" v-focus v-model="city" @keyup.enter="select()" :error="error"/>
       <Button @click="select()">Save </Button>
     </div>
-    <Button v-show="!isEdited" @click="edit()">
+    <Button v-else @click="edit()">
       <IconLocation />
       Change city
     </Button>

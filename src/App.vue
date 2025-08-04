@@ -1,82 +1,178 @@
 <script setup>
-import { computed, nextTick, reactive, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import CitySelect from './components/CitySelect.vue';
+import Error from './components/Error.vue';
+import DayCard from './components/DayCard.vue';
 import Stat from './components/Stat.vue';
 
 const city = ref('');
+const errorMap = new Map([
+  [400, "Bad Request: Please check your input."],
+  [404, "City not found. Please try another one."],
+  [500, "Internal Server Error: Please try again later."],
+]);
+let error = ref();
 
-const weather = reactive({
-  temperature: 0,
-  humidity: 0,
-  precipitation: 0,
-  wind: 0,
+const errorDisplay = computed(() => {
+  if (!error.value) return null;
+  const status = error.value?.error?.code;
+  return errorMap.get(status) || "An unexpected error occurred.";
 });
 
-const weatherModified = computed(() => {
-  return [{
-    label: "Temperature",
-    stat: weather.temperature + "°C",
-  },
-  {
-    label: "Humidity",
-    stat: weather.humidity + "%",
-  },
-  {
-    label: "Precipitation",
-    stat: weather.precipitation + "%",
-  },
-  {
-    label: "Wind",
-    stat: weather.wind + "M/s",
-  },
-];
+const forecast = ref(null);
+const selectedDay = ref(null);
+
+function resetWeather() {
+    forecast.value = null;
+    selectedDay.value = null;
+}
+
+const dailyForecast = computed(() => {
+  if (!forecast.value) return [];
+
+  return forecast.value.time.map((time, index) => ({
+    date: new Date(time),
+    displayDate: new Date(time).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+    temperature: Math.round(forecast.value.temperature_2m_max[index]),
+    weatherIcon: getIconForCode(forecast.value.weather_code[index]),
+    humidity: Math.round(forecast.value.relative_humidity_2m_mean[index]),
+    precipitation: forecast.value.precipitation_sum[index].toFixed(2),
+    wind: forecast.value.wind_speed_10m_max[index].toFixed(2),
+  }));
 });
+
+const selectedWeather = computed(() => {
+    if (!selectedDay.value) return [];
+    return [
+        {
+            label: "Temperature",
+            stat: selectedDay.value.temperature + "°C",
+        },
+        {
+            label: "Humidity",
+            stat: selectedDay.value.humidity + "%",
+        },
+        {
+            label: "Precipitation",
+            stat: selectedDay.value.precipitation + "mm",
+        },
+        {
+            label: "Wind",
+            stat: selectedDay.value.wind + "M/s",
+        },
+    ];
+});
+
+function selectDay(day) {
+    selectedDay.value = day;
+}
+
+watch(dailyForecast, (newForecast) => {
+  if (newForecast && newForecast.length > 0) {
+    selectDay(newForecast[0]);
+  }
+});
+
+function getIconForCode(code) {
+  const iconMap = {
+    sun: [0],
+    cloud: [1, 2, 3, 45, 48],
+    rain: [51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82, 95, 96, 99],
+    snow: [71, 73, 75, 77, 85, 86],
+  };
+
+  for (const icon in iconMap) {
+    if (iconMap[icon].includes(code)) {
+      return icon;
+    }
+  }
+
+  return 'sun'; // Default icon
+}
 
 async function getCity(selectedCity) {
   city.value = selectedCity;
   const response = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${selectedCity}&count=1`);
+  if (!response.ok) {
+    error.value = await response.json();
+    resetWeather();
+    return;
+  }
   const data = await response.json();
-  const cityData = data.results[0];
-  await getWeather(cityData.latitude, cityData.longitude);
+  const cityData = data.results && data.results[0];
+  if (cityData) {
+    error.value = null;
+    await getWeather(cityData.latitude, cityData.longitude);
+  } else {
+    error.value = { error: { code: 404 } };
+    resetWeather();
+  }
 }
 
 async function getWeather(latitude, longitude) {
   const params = new URLSearchParams({
     latitude,
     longitude,
-    current_weather: true,
-    hourly: "temperature_2m,relative_humidity_2m,apparent_temperature,precipitation_probability,wind_speed_10m",
+    daily: "weather_code,temperature_2m_max,relative_humidity_2m_mean,precipitation_sum,wind_speed_10m_max",
+    timezone: "auto",
   });
   const response = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`);
   const data = await response.json();
-  weather.temperature = data.current_weather.temperature;
-  weather.humidity = data.hourly.relative_humidity_2m[0];
-  weather.precipitation = data.hourly.precipitation_probability[0];
-  weather.wind = data.current_weather.windspeed;
+  forecast.value = data.daily;
 }
 </script>
 
 <template>
-  <main class="main">
-    <div class="city-name">{{ city }}</div>
-    <Stat  v-for="item in weatherModified" v-bind="item" :key="item.label" />
-    <CitySelect @select-city="getCity"/>
+  <main>
+    <div class="left">
+
+    </div>
+    <div class="right">
+      <Error :error="errorDisplay" />
+      <div class="stats-container" v-if="selectedWeather.length > 0">
+          <Stat v-for="item in selectedWeather" v-bind="item" :key="item.label" />
+      </div>
+      <div v-if="dailyForecast.length > 0" class="day-card-list">
+        <DayCard
+          v-for="day in dailyForecast"
+          :key="day.date"
+          :date="day.displayDate"
+          :temperature="day.temperature"
+          :weatherIcon="day.weatherIcon"
+          :isActive="selectedDay && selectedDay.date.getTime() === day.date.getTime()"
+          @click="selectDay(day)"
+        />
+      </div>
+      <CitySelect @select-city="getCity" :error="errorDisplay"/>
+    </div>
   </main>
 </template>
 
 <style scoped>
-.main {
+.right {
   background: var(--color-bg-main);
-  padding: 60px 50px;
+  padding: 40px;
   border-radius: 25px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  align-items: center;
+  gap: 30px;
 }
 
-.city-name {
-  font-size: 36px;
-  font-weight: 700;
-  text-align: center;
+.stats-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    width: 100%;
+    border-bottom: 1px solid #4a5568;
+    padding-bottom: 20px;
+}
+
+.day-card-list {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 15px;
+  width: 100%;
 }
 </style>
+
