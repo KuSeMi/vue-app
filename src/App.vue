@@ -1,94 +1,10 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
-import CitySelect from './components/CitySelect.vue';
-import Error from './components/Error.vue';
-import DayCard from './components/DayCard.vue';
-import Stat from './components/Stat.vue';
+import { ref, onMounted, provide, watch } from 'vue';
+import PanelRight from './components/PanelRight.vue';
 
-const city = ref('');
-const errorMap = new Map([
-  [400, "Bad Request: Please check your input."],
-  [404, "City not found. Please try another one."],
-  [500, "Internal Server Error: Please try again later."],
-]);
-let error = ref();
-
-const errorDisplay = computed(() => {
-  if (!error.value) return null;
-  const status = error.value?.error?.code;
-  return errorMap.get(status) || "An unexpected error occurred.";
-});
-
+const city = ref('Kyiv');
 const forecast = ref(null);
-const selectedDay = ref(null);
-
-function resetWeather() {
-    forecast.value = null;
-    selectedDay.value = null;
-}
-
-const dailyForecast = computed(() => {
-  if (!forecast.value) return [];
-
-  return forecast.value.time.map((time, index) => ({
-    date: new Date(time),
-    displayDate: new Date(time).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
-    temperature: Math.round(forecast.value.temperature_2m_max[index]),
-    weatherIcon: getIconForCode(forecast.value.weather_code[index]),
-    humidity: Math.round(forecast.value.relative_humidity_2m_mean[index]),
-    precipitation: forecast.value.precipitation_sum[index].toFixed(2),
-    wind: forecast.value.wind_speed_10m_max[index].toFixed(2),
-  }));
-});
-
-const selectedWeather = computed(() => {
-    if (!selectedDay.value) return [];
-    return [
-        {
-            label: "Temperature",
-            stat: selectedDay.value.temperature + "°C",
-        },
-        {
-            label: "Humidity",
-            stat: selectedDay.value.humidity + "%",
-        },
-        {
-            label: "Precipitation",
-            stat: selectedDay.value.precipitation + "mm",
-        },
-        {
-            label: "Wind",
-            stat: selectedDay.value.wind + "M/s",
-        },
-    ];
-});
-
-function selectDay(day) {
-    selectedDay.value = day;
-}
-
-watch(dailyForecast, (newForecast) => {
-  if (newForecast && newForecast.length > 0) {
-    selectDay(newForecast[0]);
-  }
-});
-
-function getIconForCode(code) {
-  const iconMap = {
-    sun: [0],
-    cloud: [1, 2, 3, 45, 48],
-    rain: [51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82, 95, 96, 99],
-    snow: [71, 73, 75, 77, 85, 86],
-  };
-
-  for (const icon in iconMap) {
-    if (iconMap[icon].includes(code)) {
-      return icon;
-    }
-  }
-
-  return 'sun'; // Default icon
-}
+const error = ref();
 
 async function getCity(selectedCity) {
   city.value = selectedCity;
@@ -120,59 +36,47 @@ async function getWeather(latitude, longitude) {
   const data = await response.json();
   forecast.value = data.daily;
 }
+
+function resetWeather() {
+    forecast.value = null;
+}
+
+watch(city, () => {
+  getCity(city.value);
+});
+
+onMounted(() => {
+  getCity(city.value);
+});
+
+provide('city', city);
+provide('forecast', forecast);
+provide('error', error);
+provide('getCity', getCity);
+
 </script>
 
 <template>
-  <main>
+  <main class="main">
     <div class="left">
-
     </div>
-    <div class="right">
-      <Error :error="errorDisplay" />
-      <div class="stats-container" v-if="selectedWeather.length > 0">
-          <Stat v-for="item in selectedWeather" v-bind="item" :key="item.label" />
-      </div>
-      <div v-if="dailyForecast.length > 0" class="day-card-list">
-        <DayCard
-          v-for="day in dailyForecast"
-          :key="day.date"
-          :date="day.displayDate"
-          :temperature="day.temperature"
-          :weatherIcon="day.weatherIcon"
-          :isActive="selectedDay && selectedDay.date.getTime() === day.date.getTime()"
-          @click="selectDay(day)"
-        />
-      </div>
-      <CitySelect @select-city="getCity" :error="errorDisplay"/>
-    </div>
+    <PanelRight />
   </main>
 </template>
 
 <style scoped>
-.right {
-  background: var(--color-bg-main);
-  padding: 40px;
-  border-radius: 25px;
+.main {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 30px;
+  justify-content: center;
 }
 
-.stats-container {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    width: 100%;
-    border-bottom: 1px solid #4a5568;
-    padding-bottom: 20px;
-}
-
-.day-card-list {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 15px;
-  width: 100%;
+.left {
+  width: 500px;
+  height: 680px;
+  border-radius: 30px;
+  background-image: url("/public/bg.png");
+  background-repeat: no-repeat;
+  background-size: cover;
 }
 </style>
-
