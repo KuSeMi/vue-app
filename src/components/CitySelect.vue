@@ -2,7 +2,7 @@
 import { ref, inject } from "vue";
 import IconLocation from "../icons/IconLocation.vue";
 import Button from "./Button.vue";
-import Input from "./input.vue";
+import Input from "./Input.vue";
 
 const city = inject('city');
 const getCity = inject('getCity');
