@@ -4,17 +4,16 @@ import IconRain from '../icons/weather/IconRain.vue';
 import IconCloud from '../icons/weather/IconCloud.vue';
 import IconSnow from '../icons/weather/IconSnow.vue';
 
-const { date, temperature, weatherIcon, isActive, isToday } = defineProps({
+const { date, temperature, weatherIcon, isActive } = defineProps({
     date: String,
     temperature: Number,
     weatherIcon: String,
     isActive: Boolean,
-    isToday: Boolean,
 });
 </script>
 
 <template>
-    <button class="day-card" :class="{ 'day-card--active': isActive, 'day-card--today': isToday }">
+    <button class="day-card" :class="{ 'day-card--active': isActive }">
         <IconSun v-if="weatherIcon === 'sun'" :size="36" />
         <IconRain v-if="weatherIcon === 'rain'" :size="36" />
         <IconCloud v-if="weatherIcon === 'cloud'" :size="36" />
@@ -50,13 +49,9 @@ const { date, temperature, weatherIcon, isActive, isToday } = defineProps({
 }
 
 .day-card--active {
-  border-color: #f5a623;
+  border-color: #8fb2f5;
   transform: scale(1.05);
-  box-shadow: 0 0 15px rgba(245, 166, 35, 0.5);
-}
-
-.day-card--today {
-    border-color: #8fb2f5;
+  box-shadow: 0 0 15px rgba(143, 178, 245, 0.5);
 }
 
 .day-card__day {

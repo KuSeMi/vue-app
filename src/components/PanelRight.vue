@@ -33,7 +33,6 @@ const dailyForecast = computed(() => {
     humidity: Math.round(forecast.value.relative_humidity_2m_mean[index]),
     precipitation: forecast.value.precipitation_sum[index].toFixed(2),
     wind: forecast.value.wind_speed_10m_max[index].toFixed(2),
-    isToday: new Date().toDateString() === new Date(time).toDateString(),
   }));
 });
 

@@ -1,5 +1,7 @@
 # Vue Weather App
 
+**Live Demo:** [weather forecast](https://kusemi.github.io/vue-app/)
+
 This is a simple weather application built with Vue.js that allows you to check the weather forecast for different cities.
 
 ## Features
