@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch, inject } from 'vue';
+import { computed, watch, inject } from 'vue';
 import CitySelect from './CitySelect.vue';
 import Error from './Error.vue';
 import DayCard from './DayCard.vue';
@@ -8,6 +8,7 @@ import Stat from './Stat.vue';
 const city = inject('city');
 const forecast = inject('forecast');
 const error = inject('error');
+const selectedDay = inject('selectedDay');
 
 const errorMap = new Map([
   [400, "Bad Request: Please check your input."],
@@ -21,8 +22,6 @@ const errorDisplay = computed(() => {
   return errorMap.get(status) || "An unexpected error occurred.";
 });
 
-const selectedDay = ref(null);
-
 const dailyForecast = computed(() => {
   if (!forecast.value) return [];
 
@@ -34,6 +33,7 @@ const dailyForecast = computed(() => {
     humidity: Math.round(forecast.value.relative_humidity_2m_mean[index]),
     precipitation: forecast.value.precipitation_sum[index].toFixed(2),
     wind: forecast.value.wind_speed_10m_max[index].toFixed(2),
+    isToday: new Date().toDateString() === new Date(time).toDateString(),
   }));
 });
 
@@ -65,7 +65,7 @@ function selectDay(day) {
 
 watch(dailyForecast, (newForecast) => {
   if (newForecast && newForecast.length > 0) {
-    selectDay(newForecast[0]);
+    selectDay(newForecast.find(day => day.isToday) || newForecast[0]);
   }
 });
 
@@ -101,6 +101,7 @@ function getIconForCode(code) {
         :temperature="day.temperature"
         :weatherIcon="day.weatherIcon"
         :isActive="selectedDay && selectedDay.date.getTime() === day.date.getTime()"
+        :isToday="day.isToday"
         @click="selectDay(day)"
       />
     </div>

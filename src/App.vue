@@ -1,10 +1,12 @@
 <script setup>
 import { ref, onMounted, provide, watch } from 'vue';
+import PanelLeft from './components/PanelLeft.vue';
 import PanelRight from './components/PanelRight.vue';
 
 const city = ref('Kyiv');
 const forecast = ref(null);
 const error = ref();
+const selectedDay = ref(null);
 
 async function getCity(selectedCity) {
   city.value = selectedCity;
@@ -53,13 +55,13 @@ provide('city', city);
 provide('forecast', forecast);
 provide('error', error);
 provide('getCity', getCity);
+provide('selectedDay', selectedDay);
 
 </script>
 
 <template>
   <main class="main">
-    <div class="left">
-    </div>
+    <PanelLeft />
     <PanelRight />
   </main>
 </template>
@@ -69,14 +71,5 @@ provide('getCity', getCity);
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.left {
-  width: 500px;
-  height: 680px;
-  border-radius: 30px;
-  background-image: url("/public/bg.png");
-  background-repeat: no-repeat;
-  background-size: cover;
 }
 </style>
